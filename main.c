@@ -1,5 +1,8 @@
+#include "container_of.h"
+#include "list.h"
 #include "scanner.h"
 #include "token.h"
+#include "vector.h"
 #include <debug.h>
 #include <regex.h>
 #include <stdio.h>
@@ -25,24 +28,36 @@ struct args_result {
 };
 
 struct args_result parse_args(int argc, char *argv[]) {
-  trace_printf_ascend("parse_args\n");
   struct args_result res = {
       .stage = Stage_Full, .file_args_len = 0, .file_args = NULL};
   int skip_verbose_iter = -1;
-  for (int i = 1; i < argc; i++)
+  int skip_trace_iter = -1;
+  for (int i = 1; i < argc; i++) {
+
     if ((strcmp(argv[i], "-v") == 0) || (strcmp(argv[i], "--verbose") == 0)) {
-      DEBUG = 1;
+      DEBUG = 1; // Either works it's an extern int
+      // debug_set(1);
       debug_printf("Verbose flag is present!\n");
       skip_verbose_iter = i;
-      break;
+    } else if (strcmp(argv[i], "--no-trace") == 0 ||
+               strcmp(argv[i], "--trace-off") == 0) {
+      trace_set(0);
+      skip_trace_iter = i;
     }
+  }
+#if TRACE
+  if (!TRACE_RUNTIME) {
+    debug_printf("Tracing is off!\n");
+  }
+#endif
 
+  trace_printf_ascend("parse_args\n");
   int stage_flag_count = 0;
   enum GoalStage result = Stage_Full;
   struct stat unused_stat;
   for (int i = 1; i < argc; i++) {
     // At first check if it's a flag at all (aka starts with '-')
-    if (i == skip_verbose_iter)
+    if (i == skip_verbose_iter || i == skip_trace_iter)
       continue;
     if (argv[i][0] == '-') {
       if (strcmp(argv[i], "--lex") == 0) {
@@ -88,39 +103,59 @@ struct args_result parse_args(int argc, char *argv[]) {
   return res;
 };
 
+struct ScannerList {
+  struct list_head l;
+  struct Scanner *s;
+};
+
 int main(int argc, char *argv[]) {
-
-  debug_set(1);
-
-  // struct Scanner *s1 = ScannerInit("./test.test");
-  // struct ScannerResult sr = ScannerScan(s1);
-  // do {
-  //   printf("Token: %s at line: %zu char %zu abs pos: %zu \n",
-  //          token_to_string(sr.token), sr.pos.lineoffset,
-  //          sr.pos.linecharoffset, sr.pos.offset);
-  //   sr = ScannerScan(s1);
-  //
-  // } while (sr.token != TOKEN_EOF);
-  // debug_scanner(s1);
 
   debug_printf("Starting Compiler!\n");
   struct args_result arg_res = parse_args(argc, argv);
 
-  debug_printf("File indices, if any\n");
+  VECTOR_INIT(token_vec, 1, struct ScannerResult);
+
+  LIST_HEAD_INIT(scanner_list);
+
   for (int i = 0; i < arg_res.file_args_len; i++) {
-    debug_printf("%i\n", arg_res.file_args[i]);
+    debug_printf("Processing file arg %i\n", arg_res.file_args[i]);
 
-    struct Scanner *s1 = ScannerInit(argv[arg_res.file_args[i]]);
-    struct ScannerResult sr = ScannerScan(s1);
+    struct ScannerList *sl = malloc(sizeof(struct ScannerList));
+    sl->s = ScannerInit(argv[arg_res.file_args[i]]);
+    list_add(&scanner_list, &sl->l);
+
+    debug_scanner(sl->s);
+
+    struct ScannerResult sr;
+
     do {
-      printf("Token: %s at line: %zu char %zu abs pos: %zu \n",
-             token_to_string(sr.token), sr.pos.lineoffset,
-             sr.pos.linecharoffset, sr.pos.offset);
-      sr = ScannerScan(s1);
-
+      sr = ScannerScan(sl->s);
+      vector_push_back(token_vec, sr);
     } while (sr.token != TOKEN_EOF);
 
-    debug_scanner(s1);
+    // ScannerFree(s1);
+
+    struct ScannerResult *pos;
+    vector_for_each(pos, token_vec) {
+      debug_printf("Token: %s at line: %zu char %zu abs pos: %zu \n",
+                   token_to_string(pos->token), pos->pos.lineoffset,
+                   pos->pos.linecharoffset, pos->pos.offset);
+    }
+  }
+
+  // Cleanup
+  struct ScannerResult *pos;
+  vector_for_each(pos, token_vec) {
+    if (pos->literal) {
+      free(pos->literal);
+    }
+  }
+  pos = NULL;
+  free(token_vec.data);
+  struct list_head *posl;
+  list_for_each(posl, &scanner_list) {
+    ScannerFree(container_of(posl, struct ScannerList, l)->s);
+    free(pos);
   }
 
   if (arg_res.stage == Stage_None) {

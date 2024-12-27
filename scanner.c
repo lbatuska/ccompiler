@@ -7,31 +7,16 @@
 #include <string.h>
 #include <trace.h>
 
+void compile_regexes();
+struct filecontent read_file(char *filename);
+
 static regex_t regex_identifier, regex_constant;
 static int regexes_compiled = 0;
-
-void compile_regexes() {
-  if (regexes_compiled) {
-    trace_printf_ascend("compile_regexes() -> skipping, already compiled\n");
-    trace_descend();
-    return;
-  }
-  trace_printf_ascend("compile_regexes()\n");
-  const char *identifier = "[a-zA-Z_][a-zA-Z0-9_]*\\b";
-  const char *constant = "[0-9]+\\b";
-  int ret;
-  ret = regcomp(&regex_identifier, identifier, REG_EXTENDED);
-  ret = regcomp(&regex_constant, constant, REG_EXTENDED);
-  regexes_compiled = 1;
-  trace_descend();
-}
 
 struct filecontent {
   size_t len; // includes \0 char
   char *data;
 };
-
-struct filecontent read_file(char *filename);
 
 struct Scanner {
   // Scanner state
@@ -84,12 +69,12 @@ void skipwhitespace(struct Scanner *s) {
 }
 
 struct Scanner *ScannerInit(char *filename) {
+  struct Scanner *s = malloc(sizeof(struct Scanner));
   trace_printf_ascend("ScannerInit(\"%s\")\n", filename);
   compile_regexes();
   if (!filename) {
     goto failed;
   }
-  struct Scanner *s = malloc(sizeof(struct Scanner));
   s->filename = filename;
   struct filecontent fc = read_file(filename);
   if (!fc.data || fc.len < 1) {
@@ -206,6 +191,17 @@ end:
   return result;
 }
 
+void ScannerFree(struct Scanner *s) {
+  if (!s) {
+    trace_printf_ascend("ScannerFree(s) -> s is null!\n");
+    trace_descend();
+  }
+  trace_printf_ascend("ScannerFree(s)\n");
+  free(s->src);
+  free(s);
+  trace_descend();
+}
+
 struct filecontent read_file(char *filename) {
   trace_printf_ascend("read_file(\"%s\")\n", filename);
   struct filecontent result = {0, NULL};
@@ -275,5 +271,21 @@ void debug_scanner(struct Scanner *s) {
   debug_printf("\t current_char: %c\n", s->current_char);
   debug_printf("\t src_len: %zu\n", s->src_len);
   debug_printf("}\n");
+  trace_descend();
+}
+
+void compile_regexes() {
+  if (regexes_compiled) {
+    trace_printf_ascend("compile_regexes() -> skipping, already compiled\n");
+    trace_descend();
+    return;
+  }
+  trace_printf_ascend("compile_regexes()\n");
+  const char *identifier = "[a-zA-Z_][a-zA-Z0-9_]*\\b";
+  const char *constant = "[0-9]+\\b";
+  int ret;
+  ret = regcomp(&regex_identifier, identifier, REG_EXTENDED);
+  ret = regcomp(&regex_constant, constant, REG_EXTENDED);
+  regexes_compiled = 1;
   trace_descend();
 }

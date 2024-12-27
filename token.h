@@ -1,6 +1,7 @@
 #ifndef _TOKEN_H
 #define _TOKEN_H
 
+#include "def.h"
 #include <stddef.h>
 #include <stdio.h>
 
@@ -52,9 +53,9 @@ const char *token_to_string(enum Token t);
 struct TokenPosition {
   // char *filename; // filename, if any
   struct Scanner *scanner; // If filename is needed ask the associated scanner
-  size_t offset;
-  size_t lineoffset;
-  size_t linecharoffset;
+  sizet offset;
+  sizet lineoffset;
+  sizet linecharoffset;
 };
 
 #endif // _TOKEN_H

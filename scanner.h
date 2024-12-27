@@ -17,7 +17,9 @@ struct Scanner;
 struct Scanner *ScannerInit(char *filename);
 struct ScannerResult ScannerScan(struct Scanner *s);
 
-char *ScannerGetFileName(struct Scanner *s);
+// char ScannerGetCurrentChar()
 
+char *ScannerGetFileName(struct Scanner *s);
+void ScannerFree(struct Scanner *s);
 void debug_scanner(struct Scanner *s);
 #endif // _SCANNER_H
