@@ -30,8 +30,8 @@ const char *token_strings[TOKEN_COUNT] = {
     // OPERATOR_END
 
     // KEYWORD_BEG
-    [TOKEN_RETURN] = "return",
-    [TOKEN_MAIN] = "main",
+    [TOKEN_RETURN] = "RETURN",
+    [TOKEN_MAIN] = "MAIN",
     // KEYWORD_END
 
     // ADDITIONAL_BEG

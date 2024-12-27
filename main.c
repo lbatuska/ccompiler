@@ -137,9 +137,13 @@ int main(int argc, char *argv[]) {
 
     struct ScannerResult *pos;
     vector_for_each(pos, token_vec) {
+
+      trace_ascend();
       debug_printf("Token: %s at line: %zu char %zu abs pos: %zu \n",
                    token_to_string(pos->token), pos->pos.lineoffset,
                    pos->pos.linecharoffset, pos->pos.offset);
+
+      trace_descend();
     }
   }
 
@@ -152,10 +156,13 @@ int main(int argc, char *argv[]) {
   }
   pos = NULL;
   free(token_vec.data);
+
   struct list_head *posl;
   list_for_each(posl, &scanner_list) {
+    trace_ascend();
     ScannerFree(container_of(posl, struct ScannerList, l)->s);
     free(pos);
+    trace_descend();
   }
 
   if (arg_res.stage == Stage_None) {
