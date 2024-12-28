@@ -1,4 +1,5 @@
 #include "scanner.h"
+#include "def.h"
 #include "token.h"
 #include <debug.h>
 #include <regex.h>
@@ -14,7 +15,7 @@ static regex_t regex_identifier, regex_constant;
 static int regexes_compiled = 0;
 
 struct filecontent {
-  size_t len; // includes \0 char
+  sizet len; // includes \0 char
   char *data;
 };
 
@@ -22,12 +23,12 @@ struct Scanner {
   // Scanner state
   char *filename;
   char *src;
-  size_t src_len; // includes the \0 char
+  sizet src_len; // includes the \0 char
   // Scan state
   char current_char;
-  size_t current_offset;
-  size_t current_lineoffset;
-  size_t current_linecharoffset;
+  sizet current_offset;
+  sizet current_lineoffset;
+  sizet current_linecharoffset;
 };
 
 char *ScannerGetFileName(struct Scanner *s) {
@@ -97,7 +98,7 @@ failed:
   return NULL;
 };
 
-enum Token isKeyword(char *begin, size_t len) {
+enum Token isKeyword(char *begin, sizet len) {
   if (strncmp(begin, "int", len) == 0) {
     return TOKEN_INT;
   }
@@ -140,6 +141,7 @@ struct ScannerResult ScannerScan(struct Scanner *s) {
   }
 
   int consumed = 1;
+  sizet len = 0;
   switch (s->current_char) {
   case '(':
     result.token = TOKEN_LEFT_PARENTHESIS;
@@ -156,6 +158,29 @@ struct ScannerResult ScannerScan(struct Scanner *s) {
   case ';':
     result.token = TOKEN_SEMICOLON;
     break;
+  case '"':
+    result.token = TOKEN_STRING_LITERAL;
+    len = 1;
+    do {
+      next(s);
+      len++;
+    } while (s->current_char != '"');
+    result.literal = malloc(sizeof(char *) * (len + 1));
+    result.literal[len] = '\0';
+    memcpy(result.literal, s->src + result.pos.offset, len);
+    break;
+  case '\'':
+    result.token = TOKEN_CHAR_LITERAL;
+    len = 1;
+    do {
+      next(s);
+      len++;
+    } while (s->current_char != '\'');
+    result.literal = malloc(sizeof(char *) * (len + 1));
+    result.literal[len] = '\0';
+    memcpy(result.literal, s->src + result.pos.offset, len);
+    break;
+    break;
   default: // If nothing matched we didn't consume the char yet
     consumed = 0;
   }
@@ -168,7 +193,7 @@ struct ScannerResult ScannerScan(struct Scanner *s) {
   int matched =
       regexec(&regex_identifier, s->src + s->current_offset, 1, &match, 0);
   if (matched == 0) {
-    size_t matchlen = match.rm_eo - match.rm_so;
+    sizet matchlen = match.rm_eo - match.rm_so;
 
     // printf("Identifier mathed! Len: %zu\n", matchlen);
 
@@ -181,8 +206,12 @@ struct ScannerResult ScannerScan(struct Scanner *s) {
     for (int i = 0; i < matchlen - 1; i++) {
       next(s);
     }
+  } else if (0 == (regexec(&regex_constant, s->src + s->current_offset, 1,
+                           &match, 0))) {
+    result.token = TOKEN_INT_LITERAL;
   } else {
-    // printf("No identifier mathed!\n");
+
+    debug_printf("No regex mathed!\n");
   }
 
 end:
@@ -232,7 +261,7 @@ struct filecontent read_file(char *filename) {
     goto end;
   }
 
-  size_t bytes_read = fread(result.data, 1, file_size, file);
+  sizet bytes_read = fread(result.data, 1, file_size, file);
   if (bytes_read != file_size) {
     debug_fprintf(stderr, "Error reading the file\n");
     free(result.data);

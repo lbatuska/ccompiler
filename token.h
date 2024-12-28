@@ -14,11 +14,10 @@ enum Token {
   // Literal types
   TOKEN_LITERAL_BEG,
   TOKEN_IDENTIFIER,
-  TOKEN_VOID,
-  TOKEN_INT,
-  TOKEN_FLOAT,
-  TOKEN_CHAR,
-  TOKEN_STRING,
+  TOKEN_INT_LITERAL,
+  TOKEN_FLOAT_LITERAL,
+  TOKEN_CHAR_LITERAL,
+  TOKEN_STRING_LITERAL,
   TOKEN_LITERAL_END,
 
   // Operator types
@@ -37,8 +36,17 @@ enum Token {
 
   // Keyword types
   TOKEN_KEYWORD_BEG,
-  TOKEN_RETURN, // return
-  TOKEN_MAIN,   // main
+  TOKEN_RETURN,   // return
+  TOKEN_MAIN,     // main
+  TOKEN_VOID,     // void
+  TOKEN_INT,      // int
+  TOKEN_FLOAT,    // float
+  TOKEN_DOUBLE,   // double
+  TOKEN_LONG,     // long
+  TOKEN_SIGNED,   // signed
+  TOKEN_UNSIGNED, // unsigned
+  TOKEN_STRUCT,   // struct
+  TOKEN_CONST,    // const
   TOKEN_KEYWORD_END,
 
   TOKEN_ADDITIONAL_BEG,

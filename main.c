@@ -142,6 +142,10 @@ int main(int argc, char *argv[]) {
       debug_printf("Token: %s at line: %zu char %zu abs pos: %zu \n",
                    token_to_string(pos->token), pos->pos.lineoffset,
                    pos->pos.linecharoffset, pos->pos.offset);
+      if (pos->token == TOKEN_STRING_LITERAL ||
+          pos->token == TOKEN_CHAR_LITERAL) {
+        debug_printf("\tLiteral value: %s\n", pos->literal);
+      }
 
       trace_descend();
     }
